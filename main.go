@@ -17,6 +17,7 @@ type Config struct {
 	URL           string `yaml:"url"`
 	Token         string `yaml:"api-token"`
 	ListenAddress string `yaml:"listen-address"`
+	Insecure      bool   `yaml:"insecure"`
 }
 
 var (
@@ -24,6 +25,7 @@ var (
 	configFile    = flag.String("config.file", "/etc/prometheus/prometheus-rudder-exporter.yaml", "Path to the configuration file.")
 	rudderURL     = flag.String("rudder.url", "", "URL of the Rudder API (overrides config file).")
 	apiToken      = flag.String("rudder.api-token", "", "Token for the Rudder API (overrides config file).")
+	insecure      = flag.Bool("insecure", false, "Skip TLS certificate verification.")
 )
 
 func main() {
@@ -59,6 +61,10 @@ func main() {
 		*listenAddress = config.ListenAddress
 	}
 
+	if !*insecure {
+		*insecure = config.Insecure
+	}
+
 	if *rudderURL == "" {
 		log.Fatal("Rudder URL is required. It must be provided via the --rudder.url flag or in the configuration file.")
 	}
@@ -70,7 +76,7 @@ func main() {
 	log.Println("Starting Rudder exporter")
 
 	// Create a new collector.
-	collector := newCollector(*rudderURL, *apiToken)
+	collector := newCollector(*rudderURL, *apiToken, *insecure)
 	prometheus.MustRegister(collector)
 
 	http.Handle("/metrics", promhttp.Handler())

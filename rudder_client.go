@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,11 +17,14 @@ type RudderClient struct {
 }
 
 // NewRudderClient creates a new RudderClient.
-func NewRudderClient(baseURL, apiToken string) *RudderClient {
+func NewRudderClient(baseURL, apiToken string, insecure bool) *RudderClient {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
+	}
 	return &RudderClient{
 		baseURL:    strings.TrimSuffix(baseURL, "/"),
 		apiToken:   apiToken,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: &http.Client{Timeout: 10 * time.Second, Transport: tr},
 	}
 }
 

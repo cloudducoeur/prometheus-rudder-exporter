@@ -1,3 +1,4 @@
 url: ""
 api-token: ""
 listen-address: ":9091"
+insecure: false

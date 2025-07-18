@@ -25,17 +25,20 @@ type Collector struct {
 }
 
 // newCollector creates a new Collector.
-func newCollector(rudderURL, apiToken string) *Collector {
+func newCollector(rudderURL, apiToken string, insecure bool) *Collector {
 	return &Collector{
-		rudderURL:        rudderURL,
-		apiToken:         apiToken,
-		client:           NewRudderClient(rudderURL, apiToken),
-		up:               prometheus.NewDesc("rudder_up", "Wether the Rudder API is up.", nil, nil),
-		globalCompliance: prometheus.NewDesc("rudder_global_compliance", "Global compliance percentage.", nil, nil),
-		nodesTotal:       prometheus.NewDesc("rudder_nodes_total", "Total number of nodes.", nil, nil),
-		rulesTotal:       prometheus.NewDesc("rudder_rules_total", "Total number of rules.", nil, nil),
-		directivesTotal:  prometheus.NewDesc("rudder_directives_total", "Total number of directives.", nil, nil),
-		nodeCompliance:   prometheus.NewDesc("rudder_node_compliance", "Compliance per node.", []string{"node_id", "node_hostname"}, nil),
+		rudderURL:           rudderURL,
+		apiToken:            apiToken,
+		client:              NewRudderClient(rudderURL, apiToken, insecure),
+		up:                  prometheus.NewDesc("rudder_up", "Wether the Rudder API is up.", nil, nil),
+		globalCompliance:    prometheus.NewDesc("rudder_global_compliance", "Global compliance percentage.", nil, nil),
+		nodesTotal:          prometheus.NewDesc("rudder_nodes_total", "Total number of nodes.", nil, nil),
+		rulesTotal:          prometheus.NewDesc("rudder_rules_total", "Total number of rules.", nil, nil),
+		directivesTotal:     prometheus.NewDesc("rudder_directives_total", "Total number of directives.", nil, nil),
+		nodeCompliance:      prometheus.NewDesc("rudder_node_compliance", "Compliance per node.", []string{"node_id", "node_hostname"}, nil),
+		cvesTotal:           prometheus.NewDesc("rudder_cves_total", "Total number of CVEs.", nil, nil),
+		nodeVulnerabilities: prometheus.NewDesc("rudder_node_vulnerabilities", "Vulnerabilities per node.", []string{"node_id", "node_hostname"}, nil),
+		campaignInfo:        prometheus.NewDesc("rudder_campaign_info", "Campaign info.", []string{"campaign_id", "campaign_name"}, nil),
 	}
 }
 
