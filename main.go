@@ -4,26 +4,62 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gopkg.in/yaml.v3"
 )
+
+// Config holds the configuration values.
+
+type Config struct {
+	URL   string `yaml:"url"`
+	Token string `yaml:"api-token"`
+}
 
 var (
 	listenAddress = flag.String("web.listen-address", ":9091", "Address to listen on for web interface and telemetry.")
-	rudderURL     = flag.String("rudder.url", "", "URL of the Rudder API.")
-	apiToken      = flag.String("rudder.api-token", "", "Token for the Rudder API.")
+	configFile    = flag.String("config.file", "/etc/prometheus/prometheus-rudder-exporter.yaml", "Path to the configuration file.")
+	rudderURL     = flag.String("rudder.url", "", "URL of the Rudder API (overrides config file).")
+	apiToken      = flag.String("rudder.api-token", "", "Token for the Rudder API (overrides config file).")
 )
 
 func main() {
 	flag.Parse()
 
+	config := &Config{}
+
+	if *configFile != "" {
+		yamlFile, err := os.ReadFile(*configFile)
+		if err != nil {
+			// If the file doesn't exist, we just ignore it.
+			if !os.IsNotExist(err) {
+				log.Fatalf("Error reading config file: %s", err)
+			}
+		} else {
+			err = yaml.Unmarshal(yamlFile, config)
+			if err != nil {
+				log.Fatalf("Error parsing config file: %s", err)
+			}
+		}
+	}
+
+	// Command-line flags override config file values.
 	if *rudderURL == "" {
-		log.Fatal("Rudder URL is required. Use -rudder.url flag.")
+		*rudderURL = config.URL
 	}
 
 	if *apiToken == "" {
-		log.Fatal("Rudder API token is required. Use -rudder.api-token flag.")
+		*apiToken = config.Token
+	}
+
+	if *rudderURL == "" {
+		log.Fatal("Rudder URL is required. Use -rudder.url flag or set it in the config file.")
+	}
+
+	if *apiToken == "" {
+		log.Fatal("Rudder API token is required. Use -rudder.api-token flag or set it in the config file.")
 	}
 
 	log.Println("Starting Rudder exporter")
