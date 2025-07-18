@@ -59,7 +59,4 @@ nfpms:
       - src: ./systemd/prometheus-rudder-exporter.service
         dst: /lib/systemd/system/prometheus-rudder-exporter.service
     scripts:
-      postinstall: |-
-        #!/bin/sh
-        systemctl daemon-reload
-        systemctl enable prometheus-rudder-exporter.service
+      postinstall: ./scripts/postinstall.sh
