@@ -1,0 +1,38 @@
+groups:
+- name: rudder.alerts
+  rules:
+  - alert: RudderExporterDown
+    expr: rudder_up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Rudder exporter is down"
+      description: "The Rudder exporter cannot communicate with the Rudder API for more than one minute."
+
+  - alert: RudderGlobalComplianceTooLow
+    expr: rudder_global_compliance < 80
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Rudder global compliance is too low"
+      description: "Rudder global compliance is {{ $value | printf \"%.2f\" }}%, which is below the 80% threshold."
+
+  - alert: RudderNodeComplianceTooLow
+    expr: rudder_node_compliance < 70
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Node {{ $labels.node_hostname }} compliance is too low"
+      description: "Node {{ $labels.node_hostname }} (ID: {{ $labels.node_id }}) has a compliance score of {{ $value | printf \"%.2f\" }}%, which is below the 70% threshold."
+
+  - alert: RudderExporterUnreachable
+    expr: up{job="<your_exporter_job_name>"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Rudder exporter server is unreachable"
+      description: "Prometheus cannot scrape the Rudder exporter. The instance may be down."
