@@ -49,8 +49,8 @@ nfpms:
       - deb
     vendor: cloud-du-coeur
     homepage: https://github.com/cloudducoeur/prometheus-rudder-exporter
-    maintainer: jbriault <jean-baptiste.briault@cloud-du-coeur.fr>
-    description: Prometheus exporter for Rudder.
+    maintainer: jbriault <julien.briault@restosducoeur.org>
+    description: Prometheus exporter for Rudder
     license: Apache-2.0
     contents:
       - src: ./etc/prometheus/prometheus-rudder-exporter.yaml
