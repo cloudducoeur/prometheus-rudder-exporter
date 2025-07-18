@@ -14,8 +14,9 @@ import (
 // Config holds the configuration values.
 
 type Config struct {
-	URL   string `yaml:"url"`
-	Token string `yaml:"api-token"`
+	URL           string `yaml:"url"`
+	Token         string `yaml:"api-token"`
+	ListenAddress string `yaml:"listen-address"`
 }
 
 var (
@@ -52,6 +53,10 @@ func main() {
 
 	if *apiToken == "" {
 		*apiToken = config.Token
+	}
+
+	if *listenAddress == ":9091" && config.ListenAddress != "" {
+		*listenAddress = config.ListenAddress
 	}
 
 	if *rudderURL == "" {

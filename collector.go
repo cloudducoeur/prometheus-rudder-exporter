@@ -27,15 +27,15 @@ type Collector struct {
 // newCollector creates a new Collector.
 func newCollector(rudderURL, apiToken string) *Collector {
 	return &Collector{
-		rudderURL:           rudderURL,
-		apiToken:            apiToken,
-		client:              NewRudderClient(rudderURL, apiToken),
-		up:                  prometheus.NewDesc("rudder_up", "Wether the Rudder API is up.", nil, nil),
-		globalCompliance:    prometheus.NewDesc("rudder_global_compliance", "Global compliance percentage.", nil, nil),
-		nodesTotal:          prometheus.NewDesc("rudder_nodes_total", "Total number of nodes.", nil, nil),
-		rulesTotal:          prometheus.NewDesc("rudder_rules_total", "Total number of rules.", nil, nil),
-		directivesTotal:     prometheus.NewDesc("rudder_directives_total", "Total number of directives.", nil, nil),
-		nodeCompliance:      prometheus.NewDesc("rudder_node_compliance", "Compliance per node.", []string{"node_id", "node_hostname"}, nil),
+		rudderURL:        rudderURL,
+		apiToken:         apiToken,
+		client:           NewRudderClient(rudderURL, apiToken),
+		up:               prometheus.NewDesc("rudder_up", "Wether the Rudder API is up.", nil, nil),
+		globalCompliance: prometheus.NewDesc("rudder_global_compliance", "Global compliance percentage.", nil, nil),
+		nodesTotal:       prometheus.NewDesc("rudder_nodes_total", "Total number of nodes.", nil, nil),
+		rulesTotal:       prometheus.NewDesc("rudder_rules_total", "Total number of rules.", nil, nil),
+		directivesTotal:  prometheus.NewDesc("rudder_directives_total", "Total number of directives.", nil, nil),
+		nodeCompliance:   prometheus.NewDesc("rudder_node_compliance", "Compliance per node.", []string{"node_id", "node_hostname"}, nil),
 	}
 }
 
@@ -101,7 +101,6 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(c.nodeCompliance, prometheus.GaugeValue, nc.Compliance, nc.ID, nc.Hostname)
 		}
 	}
-
 
 	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, up)
 }
