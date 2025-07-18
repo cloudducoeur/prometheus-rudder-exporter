@@ -1,4 +1,4 @@
-module rudder-exporter
+module github.com/cloudducoeur/prometheus-rudder-exporter
 
 go 1.23.5
 
