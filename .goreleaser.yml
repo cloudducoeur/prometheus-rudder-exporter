@@ -1,0 +1,65 @@
+version: 2
+
+project_name: prometheus-rudder-exporter
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: prometheus-rudder-exporter
+    binary: prometheus-rudder-exporter
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    main: ./
+
+archives:
+  - name_template: '{{ .ProjectName }}_{{ .Version }}_{{ if eq .Os "darwin" }}Darwin{{ else }}{{ .Os }}{{ end }}_{{ if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}'
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+release:
+  github:
+    owner: cloudducoeur
+    name: prometheus-rudder-exporter
+  prerelease: auto
+
+nfpms:
+  - id: prometheus-rudder-exporter
+    package_name: prometheus-rudder-exporter
+    formats:
+      - deb
+    vendor: cloud-du-coeur
+    homepage: https://github.com/cloudducoeur/prometheus-rudder-exporter
+    maintainer: jbriault <jean-baptiste.briault@cloud-du-coeur.fr>
+    description: Prometheus exporter for Rudder.
+    license: Apache-2.0
+    contents:
+      - src: ./etc/prometheus/prometheus-rudder-exporter.yaml
+        dst: /etc/prometheus/prometheus-rudder-exporter.yaml
+        type: config|noreplace
+      - src: ./systemd/prometheus-rudder-exporter.service
+        dst: /lib/systemd/system/prometheus-rudder-exporter.service
+    scripts:
+      postinstall: |-
+        #!/bin/sh
+        systemctl daemon-reload
+        systemctl enable prometheus-rudder-exporter.service
