@@ -60,11 +60,11 @@ func main() {
 	}
 
 	if *rudderURL == "" {
-		log.Fatal("Rudder URL is required. Use -rudder.url flag or set it in the config file.")
+		log.Fatal("Rudder URL is required. It must be provided via the --rudder.url flag or in the configuration file.")
 	}
 
 	if *apiToken == "" {
-		log.Fatal("Rudder API token is required. Use -rudder.api-token flag or set it in the config file.")
+		log.Fatal("Rudder API token is required. It must be provided via the --rudder.api-token flag or in the configuration file.")
 	}
 
 	log.Println("Starting Rudder exporter")
