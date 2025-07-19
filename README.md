@@ -37,6 +37,10 @@ The exporter exposes the following metrics on the `/metrics` endpoint:
 | `rudder_nodes_total`       | Total number of nodes.        |                        |
 | `rudder_pending_nodes_total` | Total number of pending nodes. |                        |
 | `rudder_groups_total` | Total number of groups. |                        |
+| `rudder_campaign_events_scheduled_total` | Total number of scheduled campaign events. |                        |
+| `rudder_campaign_events_running_total` | Total number of running campaign events. |                        |
+| `rudder_campaign_events_finished_total` | Total number of finished campaign events. |                        |
+| `rudder_campaign_events_skipped_total` | Total number of skipped campaign events. |                        |
 | `rudder_rules_total`       | Total number of rules.        |                        |
 | `rudder_directives_total`  | Total number of directives.   |                        |
 | `rudder_node_compliance`   | Compliance per node.          | `node_id`, `node_hostname` |
