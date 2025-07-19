@@ -36,17 +36,21 @@ func newCollector(rudderURL, apiToken string, insecure bool) *Collector {
 		rudderURL:           rudderURL,
 		apiToken:            apiToken,
 		client:              NewRudderClient(rudderURL, apiToken, insecure),
-		up:                  prometheus.NewDesc("rudder_up", "Wether the Rudder API is up.", nil, nil),
-		globalCompliance:    prometheus.NewDesc("rudder_global_compliance", "Global compliance percentage.", nil, nil),
-		nodesTotal:          prometheus.NewDesc("rudder_nodes_total", "Total number of nodes.", nil, nil),
-		pendingNodesTotal:   prometheus.NewDesc("rudder_pending_nodes_total", "Total number of pending nodes.", nil, nil),
-		groupsTotal:         prometheus.NewDesc("rudder_groups_total", "Total number of groups.", nil, nil),
-		rulesTotal:          prometheus.NewDesc("rudder_rules_total", "Total number of rules.", nil, nil),
-		directivesTotal:     prometheus.NewDesc("rudder_directives_total", "Total number of directives.", nil, nil),
-		nodeCompliance:      prometheus.NewDesc("rudder_node_compliance", "Compliance per node.", []string{"node_id", "node_hostname"}, nil),
-		cvesTotal:           prometheus.NewDesc("rudder_cves_total", "Total number of CVEs.", nil, nil),
-		nodeVulnerabilities: prometheus.NewDesc("rudder_node_vulnerabilities", "Vulnerabilities per node.", []string{"node_id", "node_hostname"}, nil),
-		campaignInfo:        prometheus.NewDesc("rudder_campaign_info", "Campaign info.", []string{"campaign_id", "campaign_name"}, nil),
+		up:                        prometheus.NewDesc("rudder_up", "Wether the Rudder API is up.", nil, nil),
+		globalCompliance:          prometheus.NewDesc("rudder_global_compliance", "Global compliance percentage.", nil, nil),
+		nodesTotal:                prometheus.NewDesc("rudder_nodes_total", "Total number of nodes.", nil, nil),
+		pendingNodesTotal:         prometheus.NewDesc("rudder_pending_nodes_total", "Total number of pending nodes.", nil, nil),
+		groupsTotal:               prometheus.NewDesc("rudder_groups_total", "Total number of groups.", nil, nil),
+		rulesTotal:                prometheus.NewDesc("rudder_rules_total", "Total number of rules.", nil, nil),
+		directivesTotal:           prometheus.NewDesc("rudder_directives_total", "Total number of directives.", nil, nil),
+		nodeCompliance:            prometheus.NewDesc("rudder_node_compliance", "Compliance per node.", []string{"node_id", "node_hostname"}, nil),
+		cvesTotal:                 prometheus.NewDesc("rudder_cves_total", "Total number of CVEs.", nil, nil),
+		nodeVulnerabilities:       prometheus.NewDesc("rudder_node_vulnerabilities", "Vulnerabilities per node.", []string{"node_id", "node_hostname"}, nil),
+		campaignInfo:              prometheus.NewDesc("rudder_campaign_info", "Campaign info.", []string{"campaign_id", "campaign_name"}, nil),
+		campaignEventsScheduled:   prometheus.NewDesc("rudder_campaign_events_scheduled_total", "Total number of scheduled campaign events.", nil, nil),
+		campaignEventsRunning:     prometheus.NewDesc("rudder_campaign_events_running_total", "Total number of running campaign events.", nil, nil),
+		campaignEventsFinished:    prometheus.NewDesc("rudder_campaign_events_finished_total", "Total number of finished campaign events.", nil, nil),
+		campaignEventsSkipped:     prometheus.NewDesc("rudder_campaign_events_skipped_total", "Total number of skipped campaign events.", nil, nil),
 	}
 }
 
@@ -60,6 +64,10 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.rulesTotal
 	ch <- c.directivesTotal
 	ch <- c.nodeCompliance
+	ch <- c.campaignEventsScheduled
+	ch <- c.campaignEventsRunning
+	ch <- c.campaignEventsFinished
+	ch <- c.campaignEventsSkipped
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -102,6 +110,42 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		up = 0
 	} else {
 		ch <- prometheus.MustNewConstMetric(c.groupsTotal, prometheus.GaugeValue, float64(len(groups)))
+	}
+
+	// Campaign Events - Scheduled
+	scheduledEvents, err := c.client.GetScheduledCampaignEvents()
+	if err != nil {
+		log.Printf("Error getting scheduled campaign events: %s", err)
+		up = 0
+	} else {
+		ch <- prometheus.MustNewConstMetric(c.campaignEventsScheduled, prometheus.GaugeValue, float64(len(scheduledEvents)))
+	}
+
+	// Campaign Events - Running
+	runningEvents, err := c.client.GetRunningCampaignEvents()
+	if err != nil {
+		log.Printf("Error getting running campaign events: %s", err)
+		up = 0
+	} else {
+		ch <- prometheus.MustNewConstMetric(c.campaignEventsRunning, prometheus.GaugeValue, float64(len(runningEvents)))
+	}
+
+	// Campaign Events - Finished
+	finishedEvents, err := c.client.GetFinishedCampaignEvents()
+	if err != nil {
+		log.Printf("Error getting finished campaign events: %s", err)
+		up = 0
+	} else {
+		ch <- prometheus.MustNewConstMetric(c.campaignEventsFinished, prometheus.GaugeValue, float64(len(finishedEvents)))
+	}
+
+	// Campaign Events - Skipped
+	skippedEvents, err := c.client.GetSkippedCampaignEvents()
+	if err != nil {
+		log.Printf("Error getting skipped campaign events: %s", err)
+		up = 0
+	} else {
+		ch <- prometheus.MustNewConstMetric(c.campaignEventsSkipped, prometheus.GaugeValue, float64(len(skippedEvents)))
 	}
 
 	// Rules

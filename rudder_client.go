@@ -84,7 +84,9 @@ type Group struct {
 
 type CampaignEvent struct {
 	ID    string `json:"id"`
-	State string `json:"state"`
+	State struct {
+		Value string `json:"value"`
+	} `json:"state"`
 }
 
 func (c *RudderClient) get(path string, target interface{}) error {
