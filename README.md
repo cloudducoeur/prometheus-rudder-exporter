@@ -45,6 +45,7 @@ The exporter exposes the following metrics on the `/metrics` endpoint:
 | `rudder_campaigns_system_update_total` | Total number of system-update campaigns. |                        |
 | `rudder_campaigns_software_update_total` | Total number of software-update campaigns. |                        |
 | `rudder_campaigns_total` | Total number of campaigns. |                        |
+| `rudder_plugins_total` | Total number of plugins. |                        |
 | `rudder_rules_total`       | Total number of rules.        |                        |
 | `rudder_directives_total`  | Total number of directives.   |                        |
 | `rudder_node_compliance`   | Compliance per node.          | `node_id`, `node_hostname` |
