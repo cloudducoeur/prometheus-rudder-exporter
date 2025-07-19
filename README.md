@@ -42,6 +42,9 @@ The exporter exposes the following metrics on the `/metrics` endpoint:
 | `rudder_campaign_events_finished_total` | Total number of finished campaign events. |                        |
 | `rudder_campaign_events_skipped_total` | Total number of skipped campaign events. |                        |
 | `rudder_campaign_event_info` | Campaign event info. | `event_id`, `campaign_id`, `event_name`, `event_type`, `state` |
+| `rudder_campaigns_system_update_total` | Total number of system-update campaigns. |                        |
+| `rudder_campaigns_software_update_total` | Total number of software-update campaigns. |                        |
+| `rudder_campaigns_total` | Total number of campaigns. |                        |
 | `rudder_rules_total`       | Total number of rules.        |                        |
 | `rudder_directives_total`  | Total number of directives.   |                        |
 | `rudder_node_compliance`   | Compliance per node.          | `node_id`, `node_hostname` |
@@ -79,5 +82,4 @@ rudder_campaign_events_scheduled_total 1
 rudder_campaign_events_running_total 0
 rudder_campaign_events_finished_total 0
 rudder_campaign_events_skipped_total 0
-rudder_campaign_event_info{event_id="not_available",campaign_id="not_available",event_name="not_available",event_type="not_available",state="not_available"} 1
 ```

@@ -90,14 +90,20 @@ type CampaignEvent struct {
 }
 
 type CampaignEventDetail struct {
-	ID          string `json:"id"`
-	CampaignID  string `json:"campaignId"`
-	Name        string `json:"name"`
-	State       struct {
+	ID         string `json:"id"`
+	CampaignID string `json:"campaignId"`
+	Name       string `json:"name"`
+	State      struct {
 		Value string `json:"value"`
 	} `json:"state"`
-	EventType   string `json:"eventType"`
+	EventType     string `json:"eventType"`
 	ScheduledDate string `json:"scheduledDate"`
+}
+
+type Campaign struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"campaignType"`
 }
 
 func (c *RudderClient) get(path string, target interface{}) error {
@@ -236,4 +242,29 @@ func (c *RudderClient) GetAllCampaignEventDetails() ([]CampaignEventDetail, erro
 	}
 
 	return eventDetails, nil
+}
+
+func (c *RudderClient) GetCampaignsByType(campaignType string) ([]Campaign, error) {
+	var campaigns struct {
+		Campaigns []Campaign `json:"campaigns"`
+	}
+	path := fmt.Sprintf("/campaigns?campaignType=%s", campaignType)
+	err := c.get(path, &campaigns)
+	return campaigns.Campaigns, err
+}
+
+func (c *RudderClient) GetSystemUpdateCampaigns() ([]Campaign, error) {
+	return c.GetCampaignsByType("system-update")
+}
+
+func (c *RudderClient) GetSoftwareUpdateCampaigns() ([]Campaign, error) {
+	return c.GetCampaignsByType("software-update")
+}
+
+func (c *RudderClient) GetAllCampaigns() ([]Campaign, error) {
+	var campaigns struct {
+		Campaigns []Campaign `json:"campaigns"`
+	}
+	err := c.get("/campaigns", &campaigns)
+	return campaigns.Campaigns, err
 }
