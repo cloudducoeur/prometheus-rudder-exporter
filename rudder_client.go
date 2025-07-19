@@ -73,6 +73,11 @@ type NodeCompliance struct {
 	Compliance float64 `json:"compliance"`
 }
 
+type PendingNode struct {
+	ID       string `json:"id"`
+	Hostname string `json:"hostname"`
+}
+
 func (c *RudderClient) get(path string, target interface{}) error {
 	req, err := c.newRequest("GET", path)
 	if err != nil {
@@ -137,4 +142,12 @@ func (c *RudderClient) GetNodeCompliance() ([]NodeCompliance, error) {
 	}
 	err := c.get("/compliance/nodes", &compliance)
 	return compliance.Nodes, err
+}
+
+func (c *RudderClient) GetPendingNodes() ([]PendingNode, error) {
+	var pendingNodes struct {
+		Nodes []PendingNode `json:"nodes"`
+	}
+	err := c.get("/nodes/pending", &pendingNodes)
+	return pendingNodes.Nodes, err
 }
