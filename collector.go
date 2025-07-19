@@ -28,6 +28,7 @@ type Collector struct {
 	campaignEventsRunning     *prometheus.Desc
 	campaignEventsFinished    *prometheus.Desc
 	campaignEventsSkipped     *prometheus.Desc
+	campaignEventDetails      *prometheus.Desc
 }
 
 // newCollector creates a new Collector.
@@ -51,6 +52,7 @@ func newCollector(rudderURL, apiToken string, insecure bool) *Collector {
 		campaignEventsRunning:     prometheus.NewDesc("rudder_campaign_events_running_total", "Total number of running campaign events.", nil, nil),
 		campaignEventsFinished:    prometheus.NewDesc("rudder_campaign_events_finished_total", "Total number of finished campaign events.", nil, nil),
 		campaignEventsSkipped:     prometheus.NewDesc("rudder_campaign_events_skipped_total", "Total number of skipped campaign events.", nil, nil),
+		campaignEventDetails:      prometheus.NewDesc("rudder_campaign_event_info", "Campaign event details.", []string{"event_id", "campaign_id", "event_name", "event_type", "state"}, nil),
 	}
 }
 
@@ -68,6 +70,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.campaignEventsRunning
 	ch <- c.campaignEventsFinished
 	ch <- c.campaignEventsSkipped
+	ch <- c.campaignEventDetails
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -146,6 +149,45 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		up = 0
 	} else {
 		ch <- prometheus.MustNewConstMetric(c.campaignEventsSkipped, prometheus.GaugeValue, float64(len(skippedEvents)))
+	}
+
+	// Campaign Event Details - Simplified approach with basic event info
+	// Note: Individual event detail API appears unreliable, so we provide basic info only
+	allEventIDs := make(map[string]string) // ID -> State
+	
+	for _, event := range scheduledEvents {
+		if event.ID != "" && event.State.Value != "" {
+			allEventIDs[event.ID] = event.State.Value
+		}
+	}
+	for _, event := range runningEvents {
+		if event.ID != "" && event.State.Value != "" {
+			allEventIDs[event.ID] = event.State.Value
+		}
+	}
+	for _, event := range finishedEvents {
+		if event.ID != "" && event.State.Value != "" {
+			allEventIDs[event.ID] = event.State.Value
+		}
+	}
+	for _, event := range skippedEvents {
+		if event.ID != "" && event.State.Value != "" {
+			allEventIDs[event.ID] = event.State.Value
+		}
+	}
+	
+	// Create basic info metrics for each unique event
+	for eventID, state := range allEventIDs {
+		ch <- prometheus.MustNewConstMetric(
+			c.campaignEventDetails,
+			prometheus.GaugeValue,
+			1,
+			eventID,
+			"not_available", // campaign_id - API detail endpoint unreliable
+			"not_available", // event_name - API detail endpoint unreliable
+			"not_available", // event_type - API detail endpoint unreliable
+			state,
+		)
 	}
 
 	// Rules

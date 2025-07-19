@@ -89,6 +89,17 @@ type CampaignEvent struct {
 	} `json:"state"`
 }
 
+type CampaignEventDetail struct {
+	ID          string `json:"id"`
+	CampaignID  string `json:"campaignId"`
+	Name        string `json:"name"`
+	State       struct {
+		Value string `json:"value"`
+	} `json:"state"`
+	EventType   string `json:"eventType"`
+	ScheduledDate string `json:"scheduledDate"`
+}
+
 func (c *RudderClient) get(path string, target interface{}) error {
 	req, err := c.newRequest("GET", path)
 	if err != nil {
@@ -194,4 +205,35 @@ func (c *RudderClient) GetFinishedCampaignEvents() ([]CampaignEvent, error) {
 
 func (c *RudderClient) GetSkippedCampaignEvents() ([]CampaignEvent, error) {
 	return c.GetCampaignEventsByState("skipped")
+}
+
+func (c *RudderClient) GetCampaignEventDetail(eventID string) (*CampaignEventDetail, error) {
+	var eventDetail CampaignEventDetail
+	path := fmt.Sprintf("/campaigns/events/%s", eventID)
+	err := c.get(path, &eventDetail)
+	return &eventDetail, err
+}
+
+func (c *RudderClient) GetAllCampaignEventDetails() ([]CampaignEventDetail, error) {
+	// First get all campaign events
+	var allEvents struct {
+		CampaignEvents []CampaignEvent `json:"campaignEvents"`
+	}
+	err := c.get("/campaigns/events", &allEvents)
+	if err != nil {
+		return nil, err
+	}
+
+	// Then get details for each event
+	var eventDetails []CampaignEventDetail
+	for _, event := range allEvents.CampaignEvents {
+		detail, err := c.GetCampaignEventDetail(event.ID)
+		if err != nil {
+			// Log error but continue with other events
+			continue
+		}
+		eventDetails = append(eventDetails, *detail)
+	}
+
+	return eventDetails, nil
 }
