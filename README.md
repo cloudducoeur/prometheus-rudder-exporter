@@ -41,6 +41,7 @@ The exporter exposes the following metrics on the `/metrics` endpoint:
 | `rudder_campaign_events_running_total` | Total number of running campaign events. |                        |
 | `rudder_campaign_events_finished_total` | Total number of finished campaign events. |                        |
 | `rudder_campaign_events_skipped_total` | Total number of skipped campaign events. |                        |
+| `rudder_campaign_event_info` | Campaign event info. | `event_id`, `campaign_id`, `event_name`, `event_type`, `state` |
 | `rudder_rules_total`       | Total number of rules.        |                        |
 | `rudder_directives_total`  | Total number of directives.   |                        |
 | `rudder_node_compliance`   | Compliance per node.          | `node_id`, `node_hostname` |
@@ -74,4 +75,9 @@ rudder_node_compliance{node_hostname="prod-db-01",node_id="7c6c8cc8-d30b-41a9-a4
 rudder_node_compliance{node_hostname="rudder",node_id="root"} 45.75
 rudder_node_compliance{node_hostname="windows-2019.priv.normation.com",node_id="030cff71-1c1e-4aea-beaf-e14f209396aa"} 100
 rudder_node_compliance{node_hostname="windows-2022.priv.normation.com",node_id="15513437-7e63-4bf4-a212-397196ea8020"} 93.34
+rudder_campaign_events_scheduled_total 1
+rudder_campaign_events_running_total 0
+rudder_campaign_events_finished_total 0
+rudder_campaign_events_skipped_total 0
+rudder_campaign_event_info{event_id="not_available",campaign_id="not_available",event_name="not_available",event_type="not_available",state="not_available"} 1
 ```
