@@ -78,6 +78,10 @@ type PendingNode struct {
 	Hostname string `json:"hostname"`
 }
 
+type Group struct {
+	ID string `json:"id"`
+}
+
 func (c *RudderClient) get(path string, target interface{}) error {
 	req, err := c.newRequest("GET", path)
 	if err != nil {
@@ -150,4 +154,12 @@ func (c *RudderClient) GetPendingNodes() ([]PendingNode, error) {
 	}
 	err := c.get("/nodes/pending", &pendingNodes)
 	return pendingNodes.Nodes, err
+}
+
+func (c *RudderClient) GetGroups() ([]Group, error) {
+	var groups struct {
+		Groups []Group `json:"groups"`
+	}
+	err := c.get("/groups", &groups)
+	return groups.Groups, err
 }

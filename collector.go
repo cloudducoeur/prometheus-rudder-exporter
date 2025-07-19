@@ -17,6 +17,7 @@ type Collector struct {
 	globalCompliance    *prometheus.Desc
 	nodesTotal          *prometheus.Desc
 	pendingNodesTotal   *prometheus.Desc
+	groupsTotal         *prometheus.Desc
 	rulesTotal          *prometheus.Desc
 	directivesTotal     *prometheus.Desc
 	nodeCompliance      *prometheus.Desc
@@ -35,6 +36,7 @@ func newCollector(rudderURL, apiToken string, insecure bool) *Collector {
 		globalCompliance:    prometheus.NewDesc("rudder_global_compliance", "Global compliance percentage.", nil, nil),
 		nodesTotal:          prometheus.NewDesc("rudder_nodes_total", "Total number of nodes.", nil, nil),
 		pendingNodesTotal:   prometheus.NewDesc("rudder_pending_nodes_total", "Total number of pending nodes.", nil, nil),
+		groupsTotal:         prometheus.NewDesc("rudder_groups_total", "Total number of groups.", nil, nil),
 		rulesTotal:          prometheus.NewDesc("rudder_rules_total", "Total number of rules.", nil, nil),
 		directivesTotal:     prometheus.NewDesc("rudder_directives_total", "Total number of directives.", nil, nil),
 		nodeCompliance:      prometheus.NewDesc("rudder_node_compliance", "Compliance per node.", []string{"node_id", "node_hostname"}, nil),
@@ -50,6 +52,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.globalCompliance
 	ch <- c.nodesTotal
 	ch <- c.pendingNodesTotal
+	ch <- c.groupsTotal
 	ch <- c.rulesTotal
 	ch <- c.directivesTotal
 	ch <- c.nodeCompliance
@@ -86,6 +89,15 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		up = 0
 	} else {
 		ch <- prometheus.MustNewConstMetric(c.pendingNodesTotal, prometheus.GaugeValue, float64(len(pendingNodes)))
+	}
+
+	// Groups
+	groups, err := c.client.GetGroups()
+	if err != nil {
+		log.Printf("Error getting groups: %s", err)
+		up = 0
+	} else {
+		ch <- prometheus.MustNewConstMetric(c.groupsTotal, prometheus.GaugeValue, float64(len(groups)))
 	}
 
 	// Rules
