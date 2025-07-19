@@ -32,6 +32,10 @@ type Collector struct {
 	campaignsSystemUpdate   *prometheus.Desc
 	campaignsSoftwareUpdate *prometheus.Desc
 	campaignsTotal          *prometheus.Desc
+	pluginsTotal            *prometheus.Desc
+	pluginsEnabled          *prometheus.Desc
+	pluginsDisabled         *prometheus.Desc
+	pluginInfo              *prometheus.Desc
 }
 
 // newCollector creates a new Collector.
@@ -59,6 +63,10 @@ func newCollector(rudderURL, apiToken string, insecure bool) *Collector {
 		campaignsSystemUpdate:   prometheus.NewDesc("rudder_campaigns_system_update_total", "Total number of system-update campaigns.", nil, nil),
 		campaignsSoftwareUpdate: prometheus.NewDesc("rudder_campaigns_software_update_total", "Total number of software-update campaigns.", nil, nil),
 		campaignsTotal:          prometheus.NewDesc("rudder_campaigns_total", "Total number of campaigns.", nil, nil),
+		pluginsTotal:            prometheus.NewDesc("rudder_plugins_total", "Total number of plugins.", nil, nil),
+		pluginsEnabled:          prometheus.NewDesc("rudder_plugins_enabled_total", "Total number of enabled plugins.", nil, nil),
+		pluginsDisabled:         prometheus.NewDesc("rudder_plugins_disabled_total", "Total number of disabled plugins.", nil, nil),
+		pluginInfo:              prometheus.NewDesc("rudder_plugin_info", "Plugin information.", []string{"plugin_id", "plugin_name", "version", "enabled"}, nil),
 	}
 }
 
@@ -80,6 +88,10 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.campaignsSystemUpdate
 	ch <- c.campaignsSoftwareUpdate
 	ch <- c.campaignsTotal
+	ch <- c.pluginsTotal
+	ch <- c.pluginsEnabled
+	ch <- c.pluginsDisabled
+	ch <- c.pluginInfo
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -223,6 +235,48 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		up = 0
 	} else {
 		ch <- prometheus.MustNewConstMetric(c.campaignsTotal, prometheus.GaugeValue, float64(len(allCampaigns)))
+	}
+
+	// Plugins
+	plugins, err := c.client.GetPlugins()
+	if err != nil {
+		log.Printf("Error getting plugins: %s", err)
+		// Don't set up = 0 for plugins error as it may not be available on all instances
+		// Set default values for plugin metrics
+		ch <- prometheus.MustNewConstMetric(c.pluginsTotal, prometheus.GaugeValue, 0)
+		ch <- prometheus.MustNewConstMetric(c.pluginsEnabled, prometheus.GaugeValue, 0)
+		ch <- prometheus.MustNewConstMetric(c.pluginsDisabled, prometheus.GaugeValue, 0)
+	} else {
+		ch <- prometheus.MustNewConstMetric(c.pluginsTotal, prometheus.GaugeValue, float64(len(plugins)))
+		
+		// Count enabled and disabled plugins
+		enabledCount := 0
+		disabledCount := 0
+		for _, plugin := range plugins {
+			if plugin.Enabled {
+				enabledCount++
+			} else {
+				disabledCount++
+			}
+			
+			// Create plugin info metric
+			enabledStr := "false"
+			if plugin.Enabled {
+				enabledStr = "true"
+			}
+			ch <- prometheus.MustNewConstMetric(
+				c.pluginInfo,
+				prometheus.GaugeValue,
+				1,
+				plugin.ID,
+				plugin.Name,
+				plugin.Version,
+				enabledStr,
+			)
+		}
+		
+		ch <- prometheus.MustNewConstMetric(c.pluginsEnabled, prometheus.GaugeValue, float64(enabledCount))
+		ch <- prometheus.MustNewConstMetric(c.pluginsDisabled, prometheus.GaugeValue, float64(disabledCount))
 	}
 
 	// Rules

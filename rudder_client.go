@@ -106,6 +106,14 @@ type Campaign struct {
 	Type string `json:"campaignType"`
 }
 
+type Plugin struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
+}
+
 func (c *RudderClient) get(path string, target interface{}) error {
 	req, err := c.newRequest("GET", path)
 	if err != nil {
@@ -267,4 +275,13 @@ func (c *RudderClient) GetAllCampaigns() ([]Campaign, error) {
 	}
 	err := c.get("/campaigns", &campaigns)
 	return campaigns.Campaigns, err
+}
+
+// GetPlugins returns all plugins information
+func (c *RudderClient) GetPlugins() ([]Plugin, error) {
+	var plugins struct {
+		Plugins []Plugin `json:"plugins"`
+	}
+	err := c.get("/plugins", &plugins)
+	return plugins.Plugins, err
 }
