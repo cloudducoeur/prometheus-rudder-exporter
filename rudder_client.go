@@ -82,6 +82,11 @@ type Group struct {
 	ID string `json:"id"`
 }
 
+type CampaignEvent struct {
+	ID    string `json:"id"`
+	State string `json:"state"`
+}
+
 func (c *RudderClient) get(path string, target interface{}) error {
 	req, err := c.newRequest("GET", path)
 	if err != nil {
@@ -162,4 +167,29 @@ func (c *RudderClient) GetGroups() ([]Group, error) {
 	}
 	err := c.get("/groups", &groups)
 	return groups.Groups, err
+}
+
+func (c *RudderClient) GetCampaignEventsByState(state string) ([]CampaignEvent, error) {
+	var campaignEvents struct {
+		CampaignEvents []CampaignEvent `json:"campaignEvents"`
+	}
+	path := fmt.Sprintf("/campaigns/events?state=%s", state)
+	err := c.get(path, &campaignEvents)
+	return campaignEvents.CampaignEvents, err
+}
+
+func (c *RudderClient) GetScheduledCampaignEvents() ([]CampaignEvent, error) {
+	return c.GetCampaignEventsByState("scheduled")
+}
+
+func (c *RudderClient) GetRunningCampaignEvents() ([]CampaignEvent, error) {
+	return c.GetCampaignEventsByState("running")
+}
+
+func (c *RudderClient) GetFinishedCampaignEvents() ([]CampaignEvent, error) {
+	return c.GetCampaignEventsByState("finished")
+}
+
+func (c *RudderClient) GetSkippedCampaignEvents() ([]CampaignEvent, error) {
+	return c.GetCampaignEventsByState("skipped")
 }

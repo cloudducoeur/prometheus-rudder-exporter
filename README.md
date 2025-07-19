@@ -35,6 +35,8 @@ The exporter exposes the following metrics on the `/metrics` endpoint:
 | `rudder_up`                | Whether the Rudder API is up. |                        |
 | `rudder_global_compliance` | Global compliance percentage. |                        |
 | `rudder_nodes_total`       | Total number of nodes.        |                        |
+| `rudder_pending_nodes_total` | Total number of pending nodes. |                        |
+| `rudder_groups_total` | Total number of groups. |                        |
 | `rudder_rules_total`       | Total number of rules.        |                        |
 | `rudder_directives_total`  | Total number of directives.   |                        |
 | `rudder_node_compliance`   | Compliance per node.          | `node_id`, `node_hostname` |

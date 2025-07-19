@@ -13,17 +13,21 @@ type Collector struct {
 	client    *RudderClient
 
 	// Metrics
-	up                  *prometheus.Desc
-	globalCompliance    *prometheus.Desc
-	nodesTotal          *prometheus.Desc
-	pendingNodesTotal   *prometheus.Desc
-	groupsTotal         *prometheus.Desc
-	rulesTotal          *prometheus.Desc
-	directivesTotal     *prometheus.Desc
-	nodeCompliance      *prometheus.Desc
-	cvesTotal           *prometheus.Desc
-	nodeVulnerabilities *prometheus.Desc
-	campaignInfo        *prometheus.Desc
+	up                        *prometheus.Desc
+	globalCompliance          *prometheus.Desc
+	nodesTotal                *prometheus.Desc
+	pendingNodesTotal         *prometheus.Desc
+	groupsTotal               *prometheus.Desc
+	rulesTotal                *prometheus.Desc
+	directivesTotal           *prometheus.Desc
+	nodeCompliance            *prometheus.Desc
+	cvesTotal                 *prometheus.Desc
+	nodeVulnerabilities       *prometheus.Desc
+	campaignInfo              *prometheus.Desc
+	campaignEventsScheduled   *prometheus.Desc
+	campaignEventsRunning     *prometheus.Desc
+	campaignEventsFinished    *prometheus.Desc
+	campaignEventsSkipped     *prometheus.Desc
 }
 
 // newCollector creates a new Collector.
