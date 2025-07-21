@@ -47,6 +47,10 @@ The exporter exposes the following metrics on the `/metrics` endpoint:
 | `rudder_campaigns_total` | Total number of campaigns. |                        |
 | `rudder_cve_total` | Total number of CVEs. |                        | 
 | `rudder_cve_last_run_date` | Last run date of the CVE check. |                        |
+| `rudder_node_rule_compliance` | Node rule compliance. |                        |
+| `rudder_node_directive_compliance` | Node directive compliance. |                        |
+| `rudder_node_group_compliance` | Node group compliance. |                        |
+| `rudder_node_compliance` | Node compliance. |                        |
 | `rudder_cve_check` | CVE check. |                        |
 | `rudder_cve_check_node` | CVE check node. |                        |
 | `rudder_cve_check_package` | CVE check package. |                        |
