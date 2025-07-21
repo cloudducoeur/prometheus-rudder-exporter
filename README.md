@@ -22,7 +22,7 @@ You can run the exporter with the following command:
 
 ## Flags
 
-- `--rudder.url`: The URL of the Rudder API (e.g., `https://rudder.example.com/rudder/api/latest`). (Required)
+- `--rudder.url`: The URL of the Rudder API (e.g., `https://rudder.example.com`). (Required)
 - `--rudder.api-token`: Your Rudder API token. (Required)
 - `--web.listen-address`: The address to listen on for HTTP requests. (Default: `:9091`)
 
