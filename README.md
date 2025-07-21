@@ -45,7 +45,19 @@ The exporter exposes the following metrics on the `/metrics` endpoint:
 | `rudder_campaigns_system_update_total` | Total number of system-update campaigns. |                        |
 | `rudder_campaigns_software_update_total` | Total number of software-update campaigns. |                        |
 | `rudder_campaigns_total` | Total number of campaigns. |                        |
+| `rudder_cve_total` | Total number of CVEs. |                        | 
+| `rudder_cve_last_run_date` | Last run date of the CVE check. |                        |
+| `rudder_cve_check` | CVE check. |                        |
+| `rudder_cve_check_node` | CVE check node. |                        |
+| `rudder_cve_check_package` | CVE check package. |                        |
+| `rudder_cve_check_fixed_in` | CVE check fixed in. |                        |
+| `rudder_cve_check_score` | CVE check score. |                        |
+| `rudder_cve_check_severity` | CVE check severity. |                        |
+| `rudder_cve_check_severity` | CVE check severity. |                        |  
 | `rudder_plugins_total` | Total number of plugins. |                        |
+| `rudder_plugins_enabled_total` | Total number of enabled plugins. |                        |
+| `rudder_plugins_disabled_total` | Total number of disabled plugins. |                        |
+
 | `rudder_rules_total`       | Total number of rules.        |                        |
 | `rudder_directives_total`  | Total number of directives.   |                        |
 | `rudder_node_compliance`   | Compliance per node.          | `node_id`, `node_hostname` |

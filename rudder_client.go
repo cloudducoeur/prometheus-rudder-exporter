@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -114,6 +115,99 @@ type Plugin struct {
 	Enabled     bool   `json:"enabled"`
 }
 
+type CVECheckResponse struct {
+	Checks      []CVEData `json:"checks"`
+	LastRunDate string    `json:"lastRunDate"`
+}
+
+type CVEData struct {
+	CVEID string    `json:"cveId"`
+	Score CVEScore  `json:"score"`
+	Nodes []CVENode `json:"nodes"`
+}
+
+type CVEScore struct {
+	Value    float64 `json:"value"`
+	Severity string  `json:"severity"`
+}
+
+type CVENode struct {
+	NodeID   string       `json:"nodeId"`
+	Packages []CVEPackage `json:"packages"`
+}
+
+type CVEPackage struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	FixedIn string `json:"fixedIn"`
+}
+
+// Compliance structures for detailed compliance metrics
+type DirectiveCompliance struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Compliance float64 `json:"compliance"`
+	Mode       string  `json:"mode"`
+	PolicyMode string  `json:"policyMode"`
+}
+
+type DirectivesComplianceResponse struct {
+	Directives []DirectiveCompliance `json:"directives"`
+}
+
+type DirectiveDetailCompliance struct {
+	ID         string                    `json:"id"`
+	Name       string                    `json:"name"`
+	Compliance float64                   `json:"compliance"`
+	Mode       string                    `json:"mode"`
+	PolicyMode string                    `json:"policyMode"`
+	Nodes      []NodeDirectiveCompliance `json:"nodes"`
+}
+
+type NodeDirectiveCompliance struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Compliance float64 `json:"compliance"`
+}
+
+type GroupCompliance struct {
+	ID         string                `json:"id"`
+	Name       string                `json:"name"`
+	Compliance float64               `json:"compliance"`
+	Nodes      []NodeGroupCompliance `json:"nodes"`
+}
+
+type NodeGroupCompliance struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Compliance float64 `json:"compliance"`
+}
+
+type RuleCompliance struct {
+	ID         string               `json:"id"`
+	Name       string               `json:"name"`
+	Compliance float64              `json:"compliance"`
+	Mode       string               `json:"mode"`
+	Nodes      []NodeRuleCompliance `json:"nodes"`
+}
+
+type NodeRuleCompliance struct {
+	ID         string                    `json:"id"`
+	Name       string                    `json:"name"`
+	Compliance float64                   `json:"compliance"`
+	Directives []DirectiveRuleCompliance `json:"directives"`
+}
+
+type DirectiveRuleCompliance struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Compliance float64 `json:"compliance"`
+}
+
+type RulesComplianceResponse struct {
+	Rules []RuleCompliance `json:"rules"`
+}
+
 func (c *RudderClient) get(path string, target interface{}) error {
 	req, err := c.newRequest("GET", path)
 	if err != nil {
@@ -144,7 +238,7 @@ func (c *RudderClient) get(path string, target interface{}) error {
 
 func (c *RudderClient) GetGlobalCompliance() (*ComplianceResponse, error) {
 	var compliance ComplianceResponse
-	err := c.get("/compliance", &compliance)
+	err := c.get("/rudder/api/latest/compliance", &compliance)
 	return &compliance, err
 }
 
@@ -152,7 +246,7 @@ func (c *RudderClient) GetNodes() ([]Node, error) {
 	var nodes struct {
 		Nodes []Node `json:"nodes"`
 	}
-	err := c.get("/nodes?filter[os.name][eq]=Debian", &nodes) // Example filter to get nodes
+	err := c.get("/rudder/api/latest/nodes", &nodes)
 	return nodes.Nodes, err
 }
 
@@ -160,7 +254,7 @@ func (c *RudderClient) GetRules() ([]Rule, error) {
 	var rules struct {
 		Rules []Rule `json:"rules"`
 	}
-	err := c.get("/rules", &rules)
+	err := c.get("/rudder/api/latest/rules", &rules)
 	return rules.Rules, err
 }
 
@@ -168,7 +262,7 @@ func (c *RudderClient) GetDirectives() ([]Directive, error) {
 	var directives struct {
 		Directives []Directive `json:"directives"`
 	}
-	err := c.get("/directives", &directives)
+	err := c.get("/rudder/api/latest/directives", &directives)
 	return directives.Directives, err
 }
 
@@ -176,7 +270,7 @@ func (c *RudderClient) GetNodeCompliance() ([]NodeCompliance, error) {
 	var compliance struct {
 		Nodes []NodeCompliance `json:"nodes"`
 	}
-	err := c.get("/compliance/nodes", &compliance)
+	err := c.get("/rudder/api/latest/compliance/nodes", &compliance)
 	return compliance.Nodes, err
 }
 
@@ -184,7 +278,7 @@ func (c *RudderClient) GetPendingNodes() ([]PendingNode, error) {
 	var pendingNodes struct {
 		Nodes []PendingNode `json:"nodes"`
 	}
-	err := c.get("/nodes/pending", &pendingNodes)
+	err := c.get("/rudder/api/latest/nodes/pending", &pendingNodes)
 	return pendingNodes.Nodes, err
 }
 
@@ -192,7 +286,7 @@ func (c *RudderClient) GetGroups() ([]Group, error) {
 	var groups struct {
 		Groups []Group `json:"groups"`
 	}
-	err := c.get("/groups", &groups)
+	err := c.get("/rudder/api/latest/groups", &groups)
 	return groups.Groups, err
 }
 
@@ -200,7 +294,7 @@ func (c *RudderClient) GetCampaignEventsByState(state string) ([]CampaignEvent, 
 	var campaignEvents struct {
 		CampaignEvents []CampaignEvent `json:"campaignEvents"`
 	}
-	path := fmt.Sprintf("/campaigns/events?state=%s", state)
+	path := fmt.Sprintf("/rudder/api/latest/campaigns/events?state=%s", state)
 	err := c.get(path, &campaignEvents)
 	return campaignEvents.CampaignEvents, err
 }
@@ -223,7 +317,7 @@ func (c *RudderClient) GetSkippedCampaignEvents() ([]CampaignEvent, error) {
 
 func (c *RudderClient) GetCampaignEventDetail(eventID string) (*CampaignEventDetail, error) {
 	var eventDetail CampaignEventDetail
-	path := fmt.Sprintf("/campaigns/events/%s", eventID)
+	path := fmt.Sprintf("/rudder/api/latest/campaigns/events/%s", eventID)
 	err := c.get(path, &eventDetail)
 	return &eventDetail, err
 }
@@ -233,7 +327,7 @@ func (c *RudderClient) GetAllCampaignEventDetails() ([]CampaignEventDetail, erro
 	var allEvents struct {
 		CampaignEvents []CampaignEvent `json:"campaignEvents"`
 	}
-	err := c.get("/campaigns/events", &allEvents)
+	err := c.get("/rudder/api/latest/campaigns/events", &allEvents)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +350,7 @@ func (c *RudderClient) GetCampaignsByType(campaignType string) ([]Campaign, erro
 	var campaigns struct {
 		Campaigns []Campaign `json:"campaigns"`
 	}
-	path := fmt.Sprintf("/campaigns?campaignType=%s", campaignType)
+	path := fmt.Sprintf("/rudder/api/latest/campaigns?campaignType=%s", campaignType)
 	err := c.get(path, &campaigns)
 	return campaigns.Campaigns, err
 }
@@ -273,7 +367,7 @@ func (c *RudderClient) GetAllCampaigns() ([]Campaign, error) {
 	var campaigns struct {
 		Campaigns []Campaign `json:"campaigns"`
 	}
-	err := c.get("/campaigns", &campaigns)
+	err := c.get("/rudder/api/latest/campaigns", &campaigns)
 	return campaigns.Campaigns, err
 }
 
@@ -282,6 +376,91 @@ func (c *RudderClient) GetPlugins() ([]Plugin, error) {
 	var plugins struct {
 		Plugins []Plugin `json:"plugins"`
 	}
-	err := c.get("/plugins", &plugins)
+	err := c.get("/rudder/api/latest/plugins", &plugins)
 	return plugins.Plugins, err
+}
+
+// GetLastCVECheck returns the last CVE check information
+func (c *RudderClient) GetLastCVECheck() (*CVECheckResponse, error) {
+	// Use a more flexible approach to parse the JSON
+	var rawResponse map[string]interface{}
+	err := c.get("/rudder/api/latest/cve/check/last", &rawResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	// Navigate through the JSON structure manually
+	data, ok := rawResponse["data"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid data structure")
+	}
+
+	cveChecks, ok := data["CVEChecks"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid CVEChecks structure")
+	}
+
+	// Convert back to our struct
+	cveChecksJSON, err := json.Marshal(cveChecks)
+	if err != nil {
+		return nil, err
+	}
+
+	var result CVECheckResponse
+	err = json.Unmarshal(cveChecksJSON, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("CVE API Response - Checks count: %d, LastRunDate: %s",
+		len(result.Checks), result.LastRunDate)
+	return &result, nil
+}
+
+// Compliance API methods
+
+// GetDirectivesCompliance returns compliance for all directives
+func (c *RudderClient) GetDirectivesCompliance() (*DirectivesComplianceResponse, error) {
+	var response DirectivesComplianceResponse
+	err := c.get("/rudder/api/latest/compliance/directives", &response)
+	return &response, err
+}
+
+// GetDirectiveCompliance returns compliance for a specific directive
+func (c *RudderClient) GetDirectiveCompliance(directiveID string) (*DirectiveDetailCompliance, error) {
+	var response DirectiveDetailCompliance
+	path := fmt.Sprintf("/rudder/api/latest/compliance/directives/%s", directiveID)
+	err := c.get(path, &response)
+	return &response, err
+}
+
+// GetNodeGroupCompliance returns compliance for a specific node group (global)
+func (c *RudderClient) GetNodeGroupCompliance(groupID string) (*GroupCompliance, error) {
+	var response GroupCompliance
+	path := fmt.Sprintf("/rudder/api/latest/compliance/nodeGroups/%s", groupID)
+	err := c.get(path, &response)
+	return &response, err
+}
+
+// GetNodeGroupComplianceTarget returns compliance for a specific node group (targeted)
+func (c *RudderClient) GetNodeGroupComplianceTarget(groupID string) (*GroupCompliance, error) {
+	var response GroupCompliance
+	path := fmt.Sprintf("/rudder/api/latest/compliance/nodeGroups/%s/target", groupID)
+	err := c.get(path, &response)
+	return &response, err
+}
+
+// GetRulesCompliance returns compliance for all rules with details
+func (c *RudderClient) GetRulesCompliance() (*RulesComplianceResponse, error) {
+	var response RulesComplianceResponse
+	err := c.get("/rudder/api/latest/compliance/rules", &response)
+	return &response, err
+}
+
+// GetRuleCompliance returns compliance for a specific rule
+func (c *RudderClient) GetRuleCompliance(ruleID string) (*RuleCompliance, error) {
+	var response RuleCompliance
+	path := fmt.Sprintf("/rudder/api/latest/compliance/rules/%s", ruleID)
+	err := c.get(path, &response)
+	return &response, err
 }

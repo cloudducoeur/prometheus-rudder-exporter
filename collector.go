@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -36,6 +37,18 @@ type Collector struct {
 	pluginsEnabled          *prometheus.Desc
 	pluginsDisabled         *prometheus.Desc
 	pluginInfo              *prometheus.Desc
+	cveCheckNodeCVEs        *prometheus.Desc
+	cveCheckInfo            *prometheus.Desc
+	// Compliance metrics
+	directiveCompliance     *prometheus.Desc
+	directiveComplianceInfo *prometheus.Desc
+	groupCompliance         *prometheus.Desc
+	groupComplianceInfo     *prometheus.Desc
+	ruleCompliance          *prometheus.Desc
+	ruleComplianceInfo      *prometheus.Desc
+	nodeDirectiveCompliance *prometheus.Desc
+	nodeGroupCompliance     *prometheus.Desc
+	nodeRuleCompliance      *prometheus.Desc
 }
 
 // newCollector creates a new Collector.
@@ -67,6 +80,18 @@ func newCollector(rudderURL, apiToken string, insecure bool) *Collector {
 		pluginsEnabled:          prometheus.NewDesc("rudder_plugins_enabled_total", "Total number of enabled plugins.", nil, nil),
 		pluginsDisabled:         prometheus.NewDesc("rudder_plugins_disabled_total", "Total number of disabled plugins.", nil, nil),
 		pluginInfo:              prometheus.NewDesc("rudder_plugin_info", "Plugin information.", []string{"plugin_id", "plugin_name", "version", "enabled"}, nil),
+		cveCheckNodeCVEs:        prometheus.NewDesc("rudder_cve_check_node_cves_total", "Total number of CVEs per node from last check.", []string{"node_id", "node_name"}, nil),
+		cveCheckInfo:            prometheus.NewDesc("rudder_cve_check_info", "CVE information from last check.", []string{"cve_id", "node_id", "node_name", "severity", "score", "package"}, nil),
+		// Compliance metrics
+		directiveCompliance:     prometheus.NewDesc("rudder_directive_compliance", "Compliance percentage per directive.", []string{"directive_id", "directive_name", "mode", "policy_mode"}, nil),
+		directiveComplianceInfo: prometheus.NewDesc("rudder_directive_compliance_info", "Detailed directive compliance information.", []string{"directive_id", "directive_name", "mode", "policy_mode"}, nil),
+		groupCompliance:         prometheus.NewDesc("rudder_group_compliance", "Compliance percentage per group.", []string{"group_id", "group_name"}, nil),
+		groupComplianceInfo:     prometheus.NewDesc("rudder_group_compliance_info", "Detailed group compliance information.", []string{"group_id", "group_name"}, nil),
+		ruleCompliance:          prometheus.NewDesc("rudder_rule_compliance", "Compliance percentage per rule.", []string{"rule_id", "rule_name", "mode"}, nil),
+		ruleComplianceInfo:      prometheus.NewDesc("rudder_rule_compliance_info", "Detailed rule compliance information.", []string{"rule_id", "rule_name", "mode"}, nil),
+		nodeDirectiveCompliance: prometheus.NewDesc("rudder_node_directive_compliance", "Compliance percentage per node per directive.", []string{"node_id", "node_name", "directive_id", "directive_name"}, nil),
+		nodeGroupCompliance:     prometheus.NewDesc("rudder_node_group_compliance", "Compliance percentage per node per group.", []string{"node_id", "node_name", "group_id", "group_name"}, nil),
+		nodeRuleCompliance:      prometheus.NewDesc("rudder_node_rule_compliance", "Compliance percentage per node per rule.", []string{"node_id", "node_name", "rule_id", "rule_name"}, nil),
 	}
 }
 
@@ -92,6 +117,18 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.pluginsEnabled
 	ch <- c.pluginsDisabled
 	ch <- c.pluginInfo
+	ch <- c.cveCheckNodeCVEs
+	ch <- c.cveCheckInfo
+	// Compliance metrics
+	ch <- c.directiveCompliance
+	ch <- c.directiveComplianceInfo
+	ch <- c.groupCompliance
+	ch <- c.groupComplianceInfo
+	ch <- c.ruleCompliance
+	ch <- c.ruleComplianceInfo
+	ch <- c.nodeDirectiveCompliance
+	ch <- c.nodeGroupCompliance
+	ch <- c.nodeRuleCompliance
 }
 
 // Collect implements the prometheus.Collector interface.
@@ -279,6 +316,88 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.pluginsDisabled, prometheus.GaugeValue, float64(disabledCount))
 	}
 
+	// CVE Check
+	cveResponse, err := c.client.GetLastCVECheck()
+	if err != nil {
+		log.Printf("Error getting last CVE check: %s", err)
+		// Don't set up = 0 for CVE check error as it may not be available on all instances
+		// Expose default metrics to ensure they are always visible
+		ch <- prometheus.MustNewConstMetric(
+			c.cveCheckNodeCVEs,
+			prometheus.GaugeValue,
+			0,
+			"no_data",
+			"no_data",
+		)
+	} else {
+		log.Printf("Successfully retrieved CVE check data with %d CVEs", len(cveResponse.Checks))
+		if len(cveResponse.Checks) == 0 {
+			// No CVE data available, expose default metric
+			ch <- prometheus.MustNewConstMetric(
+				c.cveCheckNodeCVEs,
+				prometheus.GaugeValue,
+				0,
+				"no_cve_data",
+				"no_cve_data",
+			)
+		} else {
+			// Count CVEs per node
+			nodeCVECount := make(map[string]int)
+			nodeNames := make(map[string]string)
+			
+			// Get node names from existing nodes data
+			nodes, _ := c.client.GetNodes()
+			for _, node := range nodes {
+				nodeNames[node.ID] = node.Hostname
+			}
+			
+			for _, cveData := range cveResponse.Checks {
+				for _, node := range cveData.Nodes {
+					nodeCVECount[node.NodeID]++
+					
+					// Individual CVE metrics
+					nodeName := nodeNames[node.NodeID]
+					if nodeName == "" {
+						nodeName = node.NodeID // fallback to nodeID if name not found
+					}
+					
+					// Get package name for the metric (use first package if multiple)
+					packageName := "unknown"
+					if len(node.Packages) > 0 {
+						packageName = node.Packages[0].Name
+					}
+					
+					ch <- prometheus.MustNewConstMetric(
+						c.cveCheckInfo,
+						prometheus.GaugeValue,
+						1,
+						cveData.CVEID,
+						node.NodeID,
+						nodeName,
+						cveData.Score.Severity,
+						fmt.Sprintf("%.1f", cveData.Score.Value),
+						packageName,
+					)
+				}
+			}
+			
+			// Expose CVE count per node
+			for nodeID, count := range nodeCVECount {
+				nodeName := nodeNames[nodeID]
+				if nodeName == "" {
+					nodeName = nodeID
+				}
+				ch <- prometheus.MustNewConstMetric(
+					c.cveCheckNodeCVEs,
+					prometheus.GaugeValue,
+					float64(count),
+					nodeID,
+					nodeName,
+				)
+			}
+		}
+	}
+
 	// Rules
 	rules, err := c.client.GetRules()
 	if err != nil {
@@ -305,6 +424,145 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	} else {
 		for _, nc := range nodeCompliance {
 			ch <- prometheus.MustNewConstMetric(c.nodeCompliance, prometheus.GaugeValue, nc.Compliance, nc.ID, nc.Hostname)
+		}
+	}
+
+	// Compliance Metrics Collection
+	
+	// Directives Compliance
+	directivesCompliance, err := c.client.GetDirectivesCompliance()
+	if err != nil {
+		log.Printf("Error getting directives compliance: %s", err)
+		up = 0
+	} else {
+		for _, directive := range directivesCompliance.Directives {
+			ch <- prometheus.MustNewConstMetric(
+				c.directiveCompliance,
+				prometheus.GaugeValue,
+				directive.Compliance,
+				directive.ID,
+				directive.Name,
+				directive.Mode,
+				directive.PolicyMode,
+			)
+			
+			// Get detailed compliance for each directive
+			directiveDetail, err := c.client.GetDirectiveCompliance(directive.ID)
+			if err != nil {
+				log.Printf("Error getting directive %s compliance details: %s", directive.ID, err)
+				continue
+			}
+			
+			// Expose node-level directive compliance
+			for _, node := range directiveDetail.Nodes {
+				ch <- prometheus.MustNewConstMetric(
+					c.nodeDirectiveCompliance,
+					prometheus.GaugeValue,
+					node.Compliance,
+					node.ID,
+					node.Name,
+					directive.ID,
+					directive.Name,
+				)
+			}
+		}
+	}
+	
+	// Group Compliance
+	groups, err = c.client.GetGroups()
+	if err != nil {
+		log.Printf("Error getting groups for compliance: %s", err)
+	} else {
+		for _, group := range groups {
+			// Get global group compliance
+			groupCompliance, err := c.client.GetNodeGroupCompliance(group.ID)
+			if err != nil {
+				log.Printf("Error getting group %s compliance: %s", group.ID, err)
+				continue
+			}
+			
+			ch <- prometheus.MustNewConstMetric(
+				c.groupCompliance,
+				prometheus.GaugeValue,
+				groupCompliance.Compliance,
+				group.ID,
+				groupCompliance.Name,
+			)
+			
+			// Expose node-level group compliance
+			for _, node := range groupCompliance.Nodes {
+				ch <- prometheus.MustNewConstMetric(
+					c.nodeGroupCompliance,
+					prometheus.GaugeValue,
+					node.Compliance,
+					node.ID,
+					node.Name,
+					group.ID,
+					groupCompliance.Name,
+				)
+			}
+			
+			// Get targeted group compliance
+			targetedCompliance, err := c.client.GetNodeGroupComplianceTarget(group.ID)
+			if err != nil {
+				log.Printf("Error getting group %s targeted compliance: %s", group.ID, err)
+				continue
+			}
+			
+			// Expose targeted group compliance with different metric name
+			ch <- prometheus.MustNewConstMetric(
+				prometheus.NewDesc("rudder_group_compliance_targeted", "Targeted compliance percentage per group.", []string{"group_id", "group_name"}, nil),
+				prometheus.GaugeValue,
+				targetedCompliance.Compliance,
+				group.ID,
+				targetedCompliance.Name,
+			)
+		}
+	}
+	
+	// Rules Compliance
+	rulesCompliance, err := c.client.GetRulesCompliance()
+	if err != nil {
+		log.Printf("Error getting rules compliance: %s", err)
+		up = 0
+	} else {
+		for _, rule := range rulesCompliance.Rules {
+			ch <- prometheus.MustNewConstMetric(
+				c.ruleCompliance,
+				prometheus.GaugeValue,
+				rule.Compliance,
+				rule.ID,
+				rule.Name,
+				rule.Mode,
+			)
+			
+			// Expose node-level rule compliance
+			for _, node := range rule.Nodes {
+				ch <- prometheus.MustNewConstMetric(
+					c.nodeRuleCompliance,
+					prometheus.GaugeValue,
+					node.Compliance,
+					node.ID,
+					node.Name,
+					rule.ID,
+					rule.Name,
+				)
+				
+				// Expose directive-level compliance within rules
+				for _, directive := range node.Directives {
+					ch <- prometheus.MustNewConstMetric(
+						prometheus.NewDesc("rudder_node_rule_directive_compliance", "Compliance percentage per node per rule per directive.", []string{"node_id", "node_name", "rule_id", "rule_name", "directive_id", "directive_name"}, nil),
+						prometheus.GaugeValue,
+						directive.Compliance,
+						node.ID,
+						node.Name,
+						rule.ID,
+						rule.Name,
+						directive.ID,
+						directive.Name,
+					)
+				}
+			}
 		}
 	}
 
