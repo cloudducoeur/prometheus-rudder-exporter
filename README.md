@@ -62,9 +62,6 @@ The exporter exposes the following metrics on the `/metrics` endpoint:
 | `rudder_plugins_enabled_total` | Total number of enabled plugins. |                        |
 | `rudder_plugins_disabled_total` | Total number of disabled plugins. |                        |
 
-| `rudder_rules_total`       | Total number of rules.        |                        |
-| `rudder_directives_total`  | Total number of directives.   |                        |
-| `rudder_node_compliance`   | Compliance per node.          | `node_id`, `node_hostname` |
 
 ### Example Output
 
